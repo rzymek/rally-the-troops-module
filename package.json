@@ -1,18 +1,24 @@
 {
-  "name": "@rally-the-troops/module",
-  "private": true,
+  "name": "@rzymek/rally-the-troops-module",
+  "version": "0.1.0",
+  "repository": {"type": "git", "url": "git+https://github.com/rzymek/rally-the-troops-module.git"},
+  "packageManager": "pnpm@12.4.1",
+  "publishConfig": {"access": "public"},
+  "files": ["dist", "client/*.html", "tsconfig.base.json", "oxlint.base.json"],
   "type": "module",
   "exports": {
-    "./vite": "./vite.ts",
-    "./rules": "./rules/index.ts",
-    "./rules/framework": {"types": "./rules/framework.d.ts"},
-    "./client": "./client/index.ts",
-    "./client/globals": {"types": "./client/globals.d.ts"},
-    "./testing": "./testing/index.ts",
+    "./vite": "./dist/vite.js",
+    "./rules": "./dist/rules/index.js",
+    "./rules/framework": {"types": "./dist/rules/framework.d.ts"},
+    "./client": "./dist/client/index.js",
+    "./client/globals": {"types": "./dist/client/globals.d.ts"},
+    "./testing": "./dist/testing/index.js",
     "./tsconfig.json": "./tsconfig.base.json",
     "./oxlint.json": "./oxlint.base.json"
   },
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp plugins/framework.js dist/plugins/ && cp rules/framework.d.ts dist/rules/ && cp client/globals.d.ts dist/client/",
+    "prepack": "npm run build",
     "check:types": "tsc",
     "test": "vitest run"
   },

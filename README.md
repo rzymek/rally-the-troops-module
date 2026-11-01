@@ -1,18 +1,18 @@
-# @rally-the-troops/module
+# @rzymek/rally-the-troops-module
 
 Shared toolchain, typings and helpers for writing Rally the Troops modules in TypeScript.
 
 | Import | For |
 |---|---|
-| `@rally-the-troops/module/vite` | `defineRttModule()`, in `vite.config.ts` |
-| `@rally-the-troops/module/rules` | State types, hex maths, `nextActiveRole`, `isEmpty` |
-| `@rally-the-troops/module/client` | SVG, layer and hex highlight helpers, `isEmpty` |
-| `@rally-the-troops/module/rules/framework` | Ambient types of the rules framework |
-| `@rally-the-troops/module/client/globals` | Ambient types of the RTT client |
-| `@rally-the-troops/module/testing` | `stubFramework()`, for vitest |
-| `@rally-the-troops/module/tsconfig.json` | Base for `extends` |
-| `node_modules/@rally-the-troops/module/oxlint.base.json` | Base for `extends` in `.oxlintrc.json` |
-| `node_modules/@rally-the-troops/module/client/*.html` | Page partials, for `<load src="..."/>` |
+| `@rzymek/rally-the-troops-module/vite` | `defineRttModule()`, in `vite.config.ts` |
+| `@rzymek/rally-the-troops-module/rules` | State types, hex maths, `nextActiveRole`, `isEmpty` |
+| `@rzymek/rally-the-troops-module/client` | SVG, layer and hex highlight helpers, `isEmpty` |
+| `@rzymek/rally-the-troops-module/rules/framework` | Ambient types of the rules framework |
+| `@rzymek/rally-the-troops-module/client/globals` | Ambient types of the RTT client |
+| `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, for vitest |
+| `@rzymek/rally-the-troops-module/tsconfig.json` | Base for `extends` |
+| `node_modules/@rzymek/rally-the-troops-module/oxlint.base.json` | Base for `extends` in `.oxlintrc.json` |
+| `node_modules/@rzymek/rally-the-troops-module/client/*.html` | Page partials, for `<load src="..."/>` |
 
 ## The rules of the bundle
 
@@ -24,25 +24,21 @@ Shared toolchain, typings and helpers for writing Rally the Troops modules in Ty
 
 ## Starting a new module
 
-Dependency, using a sibling checkout of this repo:
+Install it with `pnpm add @rzymek/rally-the-troops-module`.
 
-```json
-"dependencies": {"@rally-the-troops/module": "link:../workspace/rally-the-troops/module"}
-```
-
-Also add `vite`, plus `typescript`, `vitest` and `oxlint` if you use them, as dev dependencies.
+Also add `vite`, plus `typescript` with `@types/node`, `vitest` and `oxlint` if you use them, as dev dependencies.
 
 ```ts
 // vite.config.ts
-import {defineRttModule} from '@rally-the-troops/module/vite'
+import {defineRttModule} from '@rzymek/rally-the-troops-module/vite'
 
 export default defineRttModule({outDir: '../../server/public/my-game/'})
 ```
 
 ```ts
 // src/rtt-env.d.ts
-import "@rally-the-troops/module/rules/framework"
-import "@rally-the-troops/module/client/globals"
+import "@rzymek/rally-the-troops-module/rules/framework"
+import "@rzymek/rally-the-troops-module/client/globals"
 ```
 
 Expected files:
@@ -59,7 +55,7 @@ src/rules/index.ts         the state globals and the on_setup and on_view export
 Rules globals, typed with the bases from this package:
 
 ```ts
-import type {BaseGameState, BaseViewState, FrameState, StateDefinition} from "@rally-the-troops/module/rules"
+import type {BaseGameState, BaseViewState, FrameState, StateDefinition} from "@rzymek/rally-the-troops-module/rules"
 
 export let G: BaseGameState & {/* your state */}
 export let L: FrameState
@@ -91,3 +87,11 @@ beforeEach(() => stubFramework({random: () => 3}))
 The set, map, array and object helpers are the framework's real code, the control flow is spies, and `random` throws unless you supply it. Call `vi.unstubAllGlobals()` if a later test needs a clean slate.
 
 `pnpm test` here builds `test/fixture` and plays it through the real framework, which guards the rules above. `pnpm check:types` type-checks the package.
+
+## Releasing
+
+Bump `version` in `package.json`, commit, then push a matching tag. The `Publish to npm` workflow checks, tests and publishes it.
+
+```sh
+git tag v0.1.1 && git push origin master v0.1.1
+```
