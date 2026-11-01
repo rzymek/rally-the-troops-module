@@ -1,0 +1,36 @@
+{
+  "name": "@rally-the-troops/module",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./vite": "./vite.ts",
+    "./rules": "./rules/index.ts",
+    "./rules/framework": {"types": "./rules/framework.d.ts"},
+    "./client": "./client/index.ts",
+    "./client/globals": {"types": "./client/globals.d.ts"},
+    "./testing": "./testing/index.ts",
+    "./tsconfig.json": "./tsconfig.base.json",
+    "./oxlint.json": "./oxlint.base.json"
+  },
+  "scripts": {
+    "check:types": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "sharp": "^0.35.5",
+    "vite-plugin-html-inject": "^1.1.2"
+  },
+  "peerDependencies": {
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {"optional": true}
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

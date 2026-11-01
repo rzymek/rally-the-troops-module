@@ -1,0 +1,19 @@
+{
+  "plugins": ["typescript", "unicorn", "import", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "rules": {
+    // `it` is the conventional lambda parameter here, also in specs that import vitest's `it`.
+    "no-shadow": ["error", {"allow": ["it"]}],
+    // Ambient declarations are pulled in with bare imports.
+    "import/no-unassigned-import": "off",
+    // The target is ES2020, so toSorted() and toReversed() are not available.
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-array-reverse": "off",
+    // Style only: local helpers are kept next to the code that uses them.
+    "unicorn/consistent-function-scoping": "off",
+    "vitest/require-mock-type-parameters": "off"
+  }
+}
