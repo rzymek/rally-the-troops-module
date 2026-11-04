@@ -18,7 +18,8 @@ beforeAll(async () => {
   const cwd = process.cwd()
   process.chdir(root)
   try {
-    await build({...defineRttModule({outDir}), root, configFile: false, logLevel: "silent"})
+    const config = defineRttModule({name: "fixture"})
+    await build({...config, build: {...config.build, outDir}, root, configFile: false, logLevel: "silent"})
   } finally {
     process.chdir(cwd)
   }

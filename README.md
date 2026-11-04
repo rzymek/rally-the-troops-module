@@ -33,8 +33,10 @@ Also add `vite`, plus `typescript` with `@types/node`, `vitest` and `oxlint` if 
 // vite.config.ts
 import {defineRttModule} from '@rzymek/rally-the-troops-module/vite'
 
-export default defineRttModule({outDir: '../../server/public/my-game/'})
+export default defineRttModule({name: 'my-game'})
 ```
+
+The build writes to `$RTT_DIR/public/<name>/`, so set `RTT_DIR` to your rally-the-troops server directory.
 
 ```ts
 // src/rtt-env.d.ts
