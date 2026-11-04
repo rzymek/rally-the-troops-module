@@ -5,6 +5,8 @@ import {cleanupSvg} from './plugins/cleanup-svg.ts'
 import {covers} from './plugins/covers-plugin.ts'
 import {flattenHtmlOutputs} from './plugins/flatten-html-outputs.ts'
 import {removeEmptyChunks} from './plugins/remove-empty-chunks.ts'
+import {existsSync} from 'node:fs';
+import {join} from 'node:path';
 
 // Harmless for an RTT page: /common/client.js and friends are served by the RTT server.
 const SUPPRESSED = [
@@ -27,13 +29,23 @@ function quietLogger() {
 }
 
 export interface RttModuleOptions {
-  /** Where the module is published, usually `<server>/public/<title>/`. */
-  outDir: string
+  /** Module short name (e.g. verdun, bastogne, etc). */
+  name: string
   /** Game-specific plugins, added after the standard ones. */
   plugins?: PluginOption[]
 }
 
-export function defineRttModule({outDir, plugins = []}: RttModuleOptions): UserConfig {
+function outDir(moduleMame:string): string {
+  // Tests load this config too, but never build, so they need no RTT_DIR.
+  if (process.env.VITEST) return 'unused-by-tests';
+  const rttDir = process.env.RTT_DIR;
+  if (!rttDir) throw new Error('Set RTT_DIR to the rally-the-troops server directory.');
+  const publicDir = join(rttDir, 'public');
+  if (!existsSync(publicDir)) throw new Error(`RTT_DIR=${rttDir} has no public directory.`);
+  return join(publicDir, moduleMame);
+}
+
+export function defineRttModule({name, plugins = []}: RttModuleOptions): UserConfig {
   return defineConfig({
     customLogger: quietLogger(),
     plugins: [
@@ -47,7 +59,7 @@ export function defineRttModule({outDir, plugins = []}: RttModuleOptions): UserC
     ],
     base: './',
     build: {
-      outDir,
+      outDir: outDir(name),
       minify: false,
       modulePreload: false,
       rollupOptions: {
