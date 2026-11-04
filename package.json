@@ -1,6 +1,7 @@
 {
   "name": "@rzymek/rally-the-troops-module",
   "version": "0.2.0",
+  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rzymek/rally-the-troops-module.git"
@@ -23,6 +24,7 @@
       "types": "./dist/rules/framework.d.ts"
     },
     "./client": "./dist/client/index.js",
+    "./pieces": "./dist/pieces/index.js",
     "./client/globals": {
       "types": "./dist/client/globals.d.ts"
     },

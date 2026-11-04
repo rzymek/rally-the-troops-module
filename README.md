@@ -6,7 +6,8 @@ Shared toolchain, typings and helpers for writing Rally the Troops modules in Ty
 |---|---|
 | `@rzymek/rally-the-troops-module/vite` | `defineRttModule()`, in `vite.config.ts` |
 | `@rzymek/rally-the-troops-module/rules` | State types, hex maths, `nextActiveRole`, `isEmpty` |
-| `@rzymek/rally-the-troops-module/client` | SVG, layer and hex highlight helpers, `isEmpty` |
+| `@rzymek/rally-the-troops-module/client` | SVG, layer, piece placement and hex highlight helpers, `isEmpty` |
+| `@rzymek/rally-the-troops-module/pieces` | SVG blocks, cylinders and other wooden pieces in cabinet projection |
 | `@rzymek/rally-the-troops-module/rules/framework` | Ambient types of the rules framework |
 | `@rzymek/rally-the-troops-module/client/globals` | Ambient types of the RTT client |
 | `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, for vitest |
@@ -95,3 +96,22 @@ Bump `version` in `package.json`, commit, then push a matching tag. The `Publish
 ```sh
 git tag v0.1.1 && git push origin master v0.1.1
 ```
+
+## Blocks and other wooden pieces
+
+`pieces` is a typed port of the RTT server's `tools/cabinet.js`, and draws the same SVG. It doesn't touch the DOM or the file system, so it runs in the browser or in a build script.
+
+```ts
+import {cuboid, drawPiece, outlinePiece} from "@rzymek/rally-the-troops-module/pieces"
+import {createSvgPieceAt, sortCabinetOrder} from "@rzymek/rally-the-troops-module/client"
+
+const block = cuboid(20, 20, 40)                  // top face 20 x 20, 40 deep
+const french = drawPiece(block, "#56b4e9")        // {svg, width, height, footprint}
+const selected = outlinePiece(block, "#0ff")      // put it under the piece
+const fireStone = drawPiece(cuboid(105, 20, 20), "#ad262e", {lean: "left"})
+
+layer.append(createSvgPieceAt(hexCenter("A01.B02"), french))
+sortCabinetOrder(layer)                           // nearer pieces on top
+```
+
+The shapes are `cuboid`, `cylinder`, `cone`, `polygon`, `hexagon`, `octagon`, `star`, `prism` and `prismFromSvgPath`. Pass `symbol` to draw SVG markup on the top face. `footprint` is the box of the face the piece stands on. `createSvgPieceAt` centres that box on the point, and for CSS it gives the negative margins that verdun's `play.css` uses.

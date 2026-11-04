@@ -1,6 +1,8 @@
 export {createLayer} from "./createLayer.ts"
 export {clearHexHighlights, highlightHexes} from "./highlightHexes.ts"
 export {createSvgMarkerAt} from "./svg/createSvgMarkerAt.ts"
+export {createSvgPieceAt, sortCabinetOrder} from "./svg/createSvgPieceAt.ts"
+export type {SvgPiece} from "./svg/createSvgPieceAt.ts"
 export {createHexCenterLocator} from "./svg/hexCenter.ts"
 export {parseSVGTransform} from "./svg/parseSVGTransform.ts"
 export {NS_XLINK, svgNS} from "./svg/svgNS.ts"
