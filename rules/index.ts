@@ -12,3 +12,4 @@ export {
 } from "./hex.ts"
 export {nextActiveRole} from "./nextActiveRole.ts"
 export {isEmpty} from "./isEmpty.ts"
+export {rollDie} from "./rollDie.ts"

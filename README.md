@@ -5,12 +5,12 @@ Shared toolchain, typings and helpers for writing Rally the Troops modules in Ty
 | Import | For |
 |---|---|
 | `@rzymek/rally-the-troops-module/vite` | `defineRttModule()`, in `vite.config.ts` |
-| `@rzymek/rally-the-troops-module/rules` | State types, hex maths, `nextActiveRole`, `isEmpty` |
+| `@rzymek/rally-the-troops-module/rules` | State types, hex maths, `nextActiveRole`, `isEmpty`, `rollDie` |
 | `@rzymek/rally-the-troops-module/client` | SVG, layer, piece placement and hex highlight helpers, `isEmpty` |
 | `@rzymek/rally-the-troops-module/pieces` | SVG blocks, cylinders and other wooden pieces in cabinet projection |
 | `@rzymek/rally-the-troops-module/rules/framework` | Ambient types of the rules framework |
 | `@rzymek/rally-the-troops-module/client/globals` | Ambient types of the RTT client |
-| `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, for vitest |
+| `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, for vitest; `playRandomGames()`, for scripts |
 | `@rzymek/rally-the-troops-module/tsconfig.json` | Base for `extends` |
 | `node_modules/@rzymek/rally-the-troops-module/oxlint.base.json` | Base for `extends` in `.oxlintrc.json` |
 | `node_modules/@rzymek/rally-the-troops-module/client/*.html` | Page partials, for `<load src="..."/>` |
@@ -117,3 +117,24 @@ sortCabinetOrder(layer)                           // nearer pieces on top
 ```
 
 The shapes are `cuboid`, `cylinder`, `cone`, `polygon`, `hexagon`, `octagon`, `star`, `prism` and `prismFromSvgPath`. Pass `symbol` to draw SVG markup on the top face. `footprint` is the box of the face the piece stands on. `createSvgPieceAt` centres that box on the point, and for CSS it gives the negative margins that verdun's `play.css` uses.
+
+## Dice
+
+`rollDie(sides = 6)` clears the undo stack, then rolls. Roll every die through it: if a die is rolled while undo
+is possible, a player can undo and roll again, and the server's fuzzer reports a `BadUndo`.
+
+## Random games
+
+`playRandomGames()` plays the built `rules.js` with random actions, never Undo, and returns the games, with their
+result and final state. Unlike the server's fuzzer, a script can then count what happened in the logs:
+
+```ts
+import {playRandomGames} from "@rzymek/rally-the-troops-module/testing"
+
+const games = playRandomGames({
+  rulesPath: `${process.env.RTT_DIR}/public/my-game/rules.js`,
+  games: 20,
+  options: game => ({some_option: game % 2 === 1}),
+})
+for (const game of games) console.log(game.scenario, game.steps, game.result ?? "unfinished", game.message)
+```

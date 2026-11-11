@@ -1,3 +1,4 @@
+export {playRandomGames, type PlayRandomGamesOptions, type RandomGame} from "./playRandomGames.ts"
 import {readFileSync} from "node:fs"
 import {vi} from "vitest"
 
