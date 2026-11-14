@@ -31,7 +31,8 @@
     },
     "./testing": "./dist/testing/index.js",
     "./tsconfig.json": "./tsconfig.base.json",
-    "./oxlint.json": "./oxlint.base.json"
+    "./oxlint.json": "./oxlint.base.json",
+    "./map": "./dist/map/index.js"
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && cp plugins/framework.js dist/plugins/ && cp rules/framework.d.ts dist/rules/ && cp client/globals.d.ts dist/client/",

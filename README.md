@@ -77,6 +77,21 @@ declare global {
 }
 ```
 
+## Area maps
+
+`@rzymek/rally-the-troops-module/map` is for build scripts (Node), not the bundles: `parsePath` turns SVG path data
+(absolute or relative, curves flattened) into polygons, and `contains`, `distanceToSegment`, `polygonDistance` and
+`anchorOf` (the point deepest inside a polygon, where pieces go) measure them. Ironwood imports its hand-drawn
+`map-areas.svg` with them.
+
+## Prompt helpers
+
+`hideStaleArgumentButtons(verb)` (client): `action_button_with_argument` only updates a button when called again with
+the same argument, so buttons of arguments no longer offered stay visible; call this after drawing them.
+
+`offered(state)` and `gotoRecorder(L, P)` (testing): what a state's prompt offers (actions by verb, buttons,
+text), and a `goto` that resets the local scope, records the state name and runs `_begin`, as the framework does.
+
 ## Hex helpers
 
 They assume hexes named `A<nn>.B<nn>`. Anything that depends on the shape of the board takes an `isOnBoard(a, b)` function. `createHexCenterLocator` and `highlightHexes` state what they need from the page in their doc comments.

@@ -1,4 +1,5 @@
 export {playRandomGames, type PlayRandomGamesOptions, type RandomGame} from "./playRandomGames.ts"
+export {gotoRecorder, offered, type Offered} from "./prompts.ts"
 import {readFileSync} from "node:fs"
 import {vi} from "vitest"
 
