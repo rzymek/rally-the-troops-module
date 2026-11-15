@@ -104,6 +104,15 @@ script with `fontFamily` (a PDF font to a CSS font-family) and `css` (for `@font
 `anchorOf` (the point deepest inside a polygon, where pieces go) measure them. Ironwood imports its hand-drawn
 `map-areas.svg` with them.
 
+## Menu links
+
+`add_main_menu_item_link_newtab(text, url)` (client): `add_main_menu_item_link`, but the link opens in a new tab, as
+the official modules' rules links do. It returns the link.
+
+```ts
+add_main_menu_item_link_newtab("Rules", "/my-game/info/rules.html")
+```
+
 ## Prompt helpers
 
 `hideStaleArgumentButtons(verb)` (client): `action_button_with_argument` only updates a button when called again with
