@@ -19,6 +19,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install the PDF tools the rulebook tests use
+        run: sudo apt-get update && sudo apt-get install -y ghostscript poppler-utils
       - name: Check that the tag matches package.json
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       - run: pnpm check:types

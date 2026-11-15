@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": ["vite.ts", "plugins", "rules", "client", "pieces", "testing", "map", "test"]
+  "include": ["vite.ts", "plugins", "rules", "client", "pieces", "testing", "map", "rulebook", "test"]
 }

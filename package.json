@@ -32,7 +32,11 @@
     "./testing": "./dist/testing/index.js",
     "./tsconfig.json": "./tsconfig.base.json",
     "./oxlint.json": "./oxlint.base.json",
-    "./map": "./dist/map/index.js"
+    "./map": "./dist/map/index.js",
+    "./rulebook": "./dist/rulebook/index.js"
+  },
+  "bin": {
+    "rtt-rulebook": "./dist/rulebook/cli.js"
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && cp plugins/framework.js dist/plugins/ && cp rules/framework.d.ts dist/rules/ && cp client/globals.d.ts dist/client/",

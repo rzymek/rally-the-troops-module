@@ -10,6 +10,7 @@ Shared toolchain, typings and helpers for writing Rally the Troops modules in Ty
 | `@rzymek/rally-the-troops-module/pieces` | SVG blocks, cylinders and other wooden pieces in cabinet projection |
 | `@rzymek/rally-the-troops-module/rules/framework` | Ambient types of the rules framework |
 | `@rzymek/rally-the-troops-module/client/globals` | Ambient types of the RTT client |
+| `@rzymek/rally-the-troops-module/rulebook` | `buildRulebook()`, PDF rules to an HTML page; also the `rtt-rulebook` command |
 | `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, for vitest; `playRandomGames()`, for scripts |
 | `@rzymek/rally-the-troops-module/tsconfig.json` | Base for `extends` |
 | `node_modules/@rzymek/rally-the-troops-module/oxlint.base.json` | Base for `extends` in `.oxlintrc.json` |
@@ -76,6 +77,25 @@ declare global {
   interface GameTypes {player: MyRoleName}  // narrows `player`, otherwise a string
 }
 ```
+
+## Rulebook
+
+The official modules publish their rules as an HTML page, not a PDF: each page is an image of the PDF page
+without its text, with the text laid over it as HTML, so it can be searched, selected and translated, and stays sharp
+when zoomed. `rtt-rulebook` makes one from your PDF. It needs `pdftohtml` (poppler-utils) and Ghostscript.
+
+```sh
+pnpm exec rtt-rulebook resources/rules.pdf --title "My Game - Rules"
+```
+
+This writes `public/info/rules.html` and `rules1.jpg`, `rules2.jpg`, ... next to it; Vite copies `public` to the
+build, so link to `/my-game/info/rules.html` from `about.html` and the play page's menu. Commit the output, so building
+the module doesn't need the PDF tools. `--out`, `--name`, `--dpi` (150) and `--quality` (80) change the defaults; run
+it again when the PDF changes, and it removes the images of pages that are gone.
+
+The text is set in Source Serif, or Source Sans for fonts with sans-like names, which the RTT server provides, and each
+line is stretched to its width in the PDF so it stays on the artwork. To use other fonts, call `buildRulebook()` from a
+script with `fontFamily` (a PDF font to a CSS font-family) and `css` (for `@font-face` rules).
 
 ## Area maps
 
