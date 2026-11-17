@@ -7,6 +7,8 @@
   "rules": {
     // `it` is the conventional lambda parameter here, also in specs that import vitest's `it`.
     "no-shadow": ["error", {"allow": ["it"]}],
+    // The framework's state hooks (_begin, _end, _resume): states define them and specs call them.
+    "no-underscore-dangle": ["error", {"allow": ["_begin", "_end", "_resume"]}],
     // Ambient declarations are pulled in with bare imports.
     "import/no-unassigned-import": "off",
     // The target is ES2020, so toSorted() and toReversed() are not available.
