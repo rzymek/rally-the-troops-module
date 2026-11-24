@@ -5,6 +5,14 @@
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/common/client.css">
 <script defer src="/common/client.js"></script>
+<style>
+    /* aside.html: a line or two about the turn, set by the game in on_update; hidden while empty. */
+    #turn_info { white-space: pre-line; padding: 4px 8px; }
+    #turn_info:empty { display: none; }
+    /* createLogRenderer: names in the log, and what they name while hovered. */
+    #log .ref { text-decoration: underline dotted; cursor: pointer; }
+    .log-focus { outline: 3px solid gold; filter: drop-shadow(0 0 4px gold); }
+</style>
 <script>
     var on_update;
     var on_init;

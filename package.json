@@ -1,6 +1,6 @@
 {
   "name": "@rzymek/rally-the-troops-module",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "license": "ISC",
   "repository": {
     "type": "git",
@@ -33,13 +33,14 @@
     "./tsconfig.json": "./tsconfig.base.json",
     "./oxlint.json": "./oxlint.base.json",
     "./map": "./dist/map/index.js",
-    "./rulebook": "./dist/rulebook/index.js"
+    "./rulebook": "./dist/rulebook/index.js",
+    "./tools": "./dist/tools/index.js"
   },
   "bin": {
     "rtt-rulebook": "./dist/rulebook/cli.js"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp plugins/framework.js dist/plugins/ && cp rules/framework.d.ts dist/rules/ && cp client/globals.d.ts dist/client/",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp plugins/framework.js dist/plugins/ && cp rules/framework.d.ts dist/rules/ && cp client/globals.d.ts dist/client/ && cp tools/terrain-editor.html dist/tools/",
     "prepack": "npm run build",
     "check:types": "tsc",
     "test": "vitest run"
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "@xmldom/xmldom": "^0.9.12",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.1.0"

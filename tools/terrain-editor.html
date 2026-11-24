@@ -1,0 +1,227 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Terrain editor</title>
+<style>
+  /* The toolbar stays put; only the map scrolls, pans with the middle mouse button and zooms with the wheel. */
+  body { margin: 0; font: 13px sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  #wrap { flex: 1; overflow: auto; display: flex; }
+  #wrap > svg { flex: none; margin: auto; display: block; cursor: crosshair; }
+  #wrap.panning, #wrap.panning svg { cursor: grabbing; }
+  #bar { flex: none; background: #eee; padding: 6px; border-bottom: 1px solid #999;
+         display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  #layers { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  #layers label { cursor: pointer; white-space: nowrap; }
+  #layers .group { font-weight: bold; }
+  .sw { display: inline-block; width: 12px; height: 12px; vertical-align: middle; border: 1px solid #444; }
+  #hover { font-family: monospace; min-width: 11em; }
+  #log { flex: none; width: 24em; white-space: pre-wrap; font-family: monospace; font-size: 12px; margin: 0; padding: 6px;
+         overflow: auto; background: #f6f6f6; border-left: 1px solid #999; }
+  #log:empty { display: none; }
+  #overlay, #marks, #cursor { pointer-events: none; }
+  /* The module's own overlays and pieces layers stay out of the way. */
+  #wrap #terrain-overlay, #wrap #pieces { display: none; }
+</style>
+<div id="bar">
+  <span id="layers"></span>
+  <label><input type="checkbox" id="only"> only this layer</label>
+  <span title="mouse wheel">zoom <span id="zoom"></span></span>
+  <span id="hover"></span>
+  <span id="count"></span>
+  <button id="submit">Submit</button>
+  <button id="discard">Discard</button>
+</div>
+<div id="main">
+  <div id="wrap"></div>
+  <pre id="log"></pre>
+</div>
+<script type="module">
+const $ = id => document.getElementById(id)
+const NS = 'http://www.w3.org/2000/svg'
+const n = Math.round
+
+const config = await (await fetch('/config')).json()
+const {layers, width, height, spaces, borders} = config
+const names = Object.keys(layers)
+const borderByKey = new Map(borders.map(b => [b.key, b]))
+let layer = names[0], terrain, zoom = 0.5
+const pending = new Map() // "layer/key" -> {layer, key, on}
+
+// Layer picker, grouped by kind; keys 1-9 select the first nine.
+const GROUPS = {space: 'Spaces', border: 'Borders'}
+let lastGroup
+$('layers').innerHTML = names.map((name, i) => {
+  const l = layers[name], group = GROUPS[l.kind]
+  const heading = group !== lastGroup ? `<span class="group">${group}:</span>` : ''
+  lastGroup = group
+  return `${heading}<label title="${name}${i < 9 ? `, key ${i + 1}` : ''}"><input type="radio" name="layer" value="${name}" ${name === layer ? 'checked' : ''}>
+    <span class="sw" style="background:${l.color}"></span> ${l.label ?? name}</label>`
+}).join(' ')
+for (const r of document.querySelectorAll('input[name=layer]')) r.onchange = () => { layer = r.value; draw() }
+document.onkeydown = e => {
+  const i = Number(e.key) - 1
+  if (i >= 0 && i < 9 && names[i]) { layer = names[i]; document.querySelector(`input[value="${layer}"]`).checked = true; draw() }
+}
+$('only').onchange = () => draw()
+
+// The module's map.svg, with the editor's layers on top.
+const svgText = await (await fetch('/map.svg')).text()
+$('wrap').innerHTML = svgText
+const svg = $('wrap').querySelector('svg')
+svg.removeAttribute('width')
+svg.removeAttribute('height')
+svg.style.width = width * zoom + 'px'
+for (const id of ['overlay', 'marks']) { const g = document.createElementNS(NS, 'g'); g.id = id; svg.append(g) }
+const cursor = document.createElementNS(NS, 'path')
+cursor.id = 'cursor'
+cursor.setAttribute('fill', 'none')
+cursor.setAttribute('stroke', '#ff0')
+cursor.setAttribute('stroke-width', '5')
+svg.append(cursor)
+$('zoom').textContent = Math.round(zoom * 100) + '%'
+
+// Middle mouse button pans the map
+let pan = null
+$('wrap').onmousedown = e => {
+  if (e.button !== 1) return
+  e.preventDefault()
+  pan = {x: e.clientX, y: e.clientY, left: $('wrap').scrollLeft, top: $('wrap').scrollTop}
+  $('wrap').classList.add('panning')
+}
+document.addEventListener('mousemove', e => {
+  if (!pan) return
+  $('wrap').scrollLeft = pan.left - (e.clientX - pan.x)
+  $('wrap').scrollTop = pan.top - (e.clientY - pan.y)
+})
+document.addEventListener('mouseup', e => {
+  if (e.button !== 1 || !pan) return
+  pan = null
+  $('wrap').classList.remove('panning')
+})
+// The mouse wheel zooms, keeping the point under the cursor in place
+function setZoom(to, x, y) {
+  const wrap = $('wrap'), from = zoom
+  const before = svg.getBoundingClientRect()
+  zoom = Math.min(Math.max(to, 0.1), 4)
+  svg.style.width = width * zoom + 'px'
+  const after = svg.getBoundingClientRect()
+  wrap.scrollLeft += after.left + (x - before.left) * zoom / from - x
+  wrap.scrollTop += after.top + (y - before.top) * zoom / from - y
+  $('zoom').textContent = Math.round(zoom * 100) + '%'
+}
+$('wrap').addEventListener('wheel', e => {
+  e.preventDefault()
+  setZoom(zoom * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), e.clientX, e.clientY)
+}, {passive: false})
+
+// A border is drawn across the line between the two spaces' anchors, at the border's middle.
+function borderPath(b) {
+  const [ax, ay] = spaces[b.a] ?? b.at, [bx, by] = spaces[b.b] ?? b.at
+  const d = Math.hypot(bx - ax, by - ay) || 1
+  const half = Math.min(d * 0.29, 60)
+  const ux = -(by - ay) / d * half, uy = (bx - ax) / d * half
+  const [x, y] = b.at
+  return `M${n(x - ux)} ${n(y - uy)}L${n(x + ux)} ${n(y + uy)}`
+}
+// For clicks near a border: about a third of the distance between neighbouring anchors.
+const borderReach = (() => {
+  const ds = borders.map(b => spaces[b.a] && spaces[b.b] ? Math.hypot(spaces[b.a][0] - spaces[b.b][0], spaces[b.a][1] - spaces[b.b][1]) : 0)
+    .filter(Boolean).sort((a, b) => a - b)
+  return ds.length ? ds[ds.length >> 1] * 0.35 : 40
+})()
+
+function spaceElement(key) {
+  return svg.querySelector(`#spaces [id="${CSS.escape(key)}"]`) ?? document.getElementById(key)
+}
+
+function target(e) {
+  if (layers[layer].kind === 'space') {
+    const el = e.target.closest?.('#spaces [id]')
+    return el && el.id in spaces ? {key: el.id} : null
+  }
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse())
+  let best = null, bd = Infinity
+  for (const b of borders) { const d = Math.hypot(b.at[0] - p.x, b.at[1] - p.y); if (d < bd) { bd = d; best = b } }
+  return bd < borderReach ? {key: best.key} : null
+}
+
+svg.addEventListener('mousemove', e => {
+  const t = target(e)
+  $('hover').textContent = t ? t.key : ''
+  cursor.setAttribute('d', t && layers[layer].kind === 'border' ? borderPath(borderByKey.get(t.key)) : '')
+})
+svg.addEventListener('click', e => {
+  const t = target(e)
+  if (!t) return
+  const id = layer + '/' + t.key
+  if (pending.has(id)) pending.delete(id)
+  else pending.set(id, {layer, key: t.key, on: !terrain[layer].has(t.key)})
+  draw()
+})
+
+function effective(name) {
+  const set = new Set(terrain[name])
+  for (const c of pending.values()) if (c.layer === name) c.on ? set.add(c.key) : set.delete(c.key)
+  return set
+}
+
+function draw() {
+  if (!terrain) return
+  const overlay = $('overlay')
+  overlay.replaceChildren()
+  for (const name of names.filter(name => !$('only').checked || name === layer)) {
+    const l = layers[name]
+    for (const key of effective(name)) {
+      if (l.kind === 'space') {
+        const el = spaceElement(key), at = spaces[key]
+        if (!el || !at) continue
+        const g = document.createElementNS(NS, 'g')
+        const s = l.scale ?? 1
+        g.setAttribute('transform', `translate(${at[0]} ${at[1]}) scale(${s}) translate(${-at[0]} ${-at[1]})`)
+        const clone = el.cloneNode(true)
+        clone.removeAttribute('id')
+        clone.setAttribute('style', `fill:${l.color};fill-opacity:0.5;stroke:none`)
+        g.append(clone)
+        overlay.append(g)
+      } else {
+        const b = borderByKey.get(key)
+        if (!b) continue
+        const path = document.createElementNS(NS, 'path')
+        path.setAttribute('d', borderPath(b))
+        path.setAttribute('stroke', l.color)
+        path.setAttribute('stroke-width', '8')
+        path.setAttribute('stroke-linecap', 'round')
+        overlay.append(path)
+      }
+    }
+  }
+  // Staged changes: a green ring is added, a red one removed.
+  $('marks').innerHTML = [...pending.values()].map(c => {
+    const at = layers[c.layer].kind === 'space' ? spaces[c.key] : borderByKey.get(c.key).at
+    return `<circle cx="${n(at[0])}" cy="${n(at[1])}" r="${layers[c.layer].kind === 'space' ? 30 : 16}" fill="none" stroke-width="6"
+      stroke="${c.on ? '#0c0' : '#f00'}"><title>${c.on ? '+' : '-'} ${c.layer} ${c.key}</title></circle>`
+  }).join('')
+  $('count').textContent = `${pending.size} staged`
+}
+
+async function loadTerrain() {
+  const data = await (await fetch('/terrain')).json()
+  terrain = Object.fromEntries(names.map(name => [name, new Set(data[name] ?? [])]))
+  draw()
+}
+
+$('discard').onclick = () => { pending.clear(); draw() }
+$('submit').onclick = async () => {
+  if (!pending.size) return
+  $('submit').disabled = true
+  $('log').textContent = 'Saving and regenerating…'
+  const res = await fetch('/submit', {method: 'POST', body: JSON.stringify([...pending.values()])})
+  const {ok, log} = await res.json()
+  $('log').textContent = (ok ? 'Saved. ' : 'FAILED: ') + log
+  if (ok) pending.clear()
+  $('submit').disabled = false
+  await loadTerrain()
+}
+
+await loadTerrain()
+</script>

@@ -8,5 +8,5 @@
     "rootDir": ".",
     "outDir": "dist"
   },
-  "include": ["vite.ts", "plugins", "rules", "client", "pieces", "testing", "map", "rulebook"]
+  "include": ["vite.ts", "plugins", "rules", "client", "pieces", "testing", "map", "rulebook", "tools"]
 }

@@ -44,3 +44,4 @@ export function stubFramework(overrides: Record<string, unknown> = {}) {
   for (const [name, value] of Object.entries(overrides))
     vi.stubGlobal(name, value)
 }
+export {frameworkNameClashes, frameworkNames, LINKED_NAMES} from "./frameworkNames.ts"

@@ -43,8 +43,11 @@ it("links the game and the framework into a playable rules.js", () => {
   expect(roles).toEqual(["White", "Black"])
   const state = setup(1, "Standard", {})
   expect(state.active).toBe("White")
-  expect(view(state, "White").prompt).toBe("Move 1")
-  expect(action(state, "White", "next").active).toBe("Black")
+  expect(view(state, "White").prompt).toBe("Move 1 {s:0101:first}")
+  const next = action(state, "White", "next")
+  expect(next.active).toBe("Black")
+  expect(next.moves).toEqual(["next"])
+  expect(setup(1, "Standard", {second: "true"}).active).toBe("Black")
 })
 
 it("keeps rules.js self-contained", () => {

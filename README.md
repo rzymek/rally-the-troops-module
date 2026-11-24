@@ -5,13 +5,15 @@ Shared toolchain, typings and helpers for writing Rally the Troops modules in Ty
 | Import | For |
 |---|---|
 | `@rzymek/rally-the-troops-module/vite` | `defineRttModule()`, in `vite.config.ts` |
-| `@rzymek/rally-the-troops-module/rules` | State types, hex maths, `nextActiveRole`, `isEmpty`, `rollDie` |
-| `@rzymek/rally-the-troops-module/client` | SVG, layer, piece placement and hex highlight helpers, `isEmpty` |
+| `@rzymek/rally-the-troops-module/rules` | State types, hex maths and offset hex grids, `reachable`, `nextActiveRole`, `isEmpty`, `rollDie`, `normalizeOptions`, `afterEachAction`, `ref` |
+| `@rzymek/rally-the-troops-module/client` | SVG, layer, piece placement and hex highlight helpers, `createLogRenderer`, `actionFor`, `isEmpty` |
 | `@rzymek/rally-the-troops-module/pieces` | SVG blocks, cylinders and other wooden pieces in cabinet projection |
 | `@rzymek/rally-the-troops-module/rules/framework` | Ambient types of the rules framework |
 | `@rzymek/rally-the-troops-module/client/globals` | Ambient types of the RTT client |
 | `@rzymek/rally-the-troops-module/rulebook` | `buildRulebook()`, PDF rules to an HTML page; also the `rtt-rulebook` command |
-| `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, for vitest; `playRandomGames()`, for scripts |
+| `@rzymek/rally-the-troops-module/testing` | `stubFramework()`, `offered()`, `gotoRecorder()`, `frameworkNameClashes()`, for vitest; `playRandomGames()`, for scripts |
+| `@rzymek/rally-the-troops-module/map` | `importAreas()`, `readMapSvg()` and polygon geometry, for map build scripts |
+| `@rzymek/rally-the-troops-module/tools` | `serveTerrainEditor()`, for a module's terrain editor |
 | `@rzymek/rally-the-troops-module/tsconfig.json` | Base for `extends` |
 | `node_modules/@rzymek/rally-the-troops-module/oxlint.base.json` | Base for `extends` in `.oxlintrc.json` |
 | `node_modules/@rzymek/rally-the-troops-module/client/*.html` | Page partials, for `<load src="..."/>` |
@@ -26,7 +28,9 @@ Shared toolchain, typings and helpers for writing Rally the Troops modules in Ty
 
 ## Starting a new module
 
-Install it with `pnpm add @rzymek/rally-the-troops-module`.
+The easiest way is to copy `modules/module-template`, a runnable module built on this package; see its README.
+
+Otherwise, install it with `pnpm add @rzymek/rally-the-troops-module`.
 
 Also add `vite`, plus `typescript` with `@types/node`, `vitest` and `oxlint` if you use them, as dev dependencies.
 
@@ -104,6 +108,21 @@ script with `fontFamily` (a PDF font to a CSS font-family) and `css` (for `@font
 `anchorOf` (the point deepest inside a polygon, where pieces go) measure them. Ironwood imports its hand-drawn
 `map-areas.svg` with them.
 
+`importAreas(svgText, {parser, layer = "areas", minBorder = 8})` does the whole import: every path, polygon or rect
+of the layer (a `<g>` with that id or Inkscape label), transforms applied, with its id, label and anchor, and the
+borders between the areas that share at least `minBorder` of it (touching at a corner doesn't count), with their
+middle points. Pass a DOMParser, e.g. `new DOMParser()` from `@xmldom/xmldom`.
+
+`readMapSvg(svgText)` reads a module's map.svg without a DOM: the viewBox size, each space's anchor (`data-anchor`,
+or a hex `<use>`'s translate) and the hex outline.
+
+## Terrain editor
+
+`serveTerrainEditor({root, layers, borders, regenerate, ...})` (`/tools`, Node) serves a page over the map where
+terrain is marked by clicking: `"space"` layers (hexes or areas) and `"border"` layers (hexsides or area borders).
+The terrain is kept in a JSON file (a list of keys per layer); Submit checks the changes against the map, saves them
+and runs the `regenerate` scripts. The module template's `tools/terrain-editor.ts` sets it up.
+
 ## Menu links
 
 `add_main_menu_item_link_newtab(text, url)` (client): `add_main_menu_item_link`, but the link opens in a new tab, as
@@ -121,7 +140,56 @@ the same argument, so buttons of arguments no longer offered stay visible; call 
 `offered(state)` and `gotoRecorder(L, P)` (testing): what a state's prompt offers (actions by verb, buttons,
 text), and a `goto` that resets the local scope, records the state name and runs `_begin`, as the framework does.
 
-## Hex helpers
+## Options, state hooks
+
+`normalizeOptions(options)` (rules): the create page's checkboxes (`"true"`, or left out) and the fuzzer's booleans
+as `Record<string, boolean>`, for on_setup.
+
+`afterEachAction(state, hook)` (rules): runs `hook` after every action handler of a state (not after `prompt` or
+the `_begin`/`_end`/`_resume` hooks), e.g. to update control of the map or check for victory.
+
+## Log references
+
+One syntax for naming things in the log, so the client can link them: `{<kind>:<id>:<name>}`. Write it with
+`ref(kind, id, name)` (rules), e.g. `ref("p", piece.id, piece.name)`; `plainText(text)` strips the markup (both sides
+have it). On the client, `createLogRenderer()` returns an `on_log`:
+
+```ts
+on_log = createLogRenderer({
+  targets: {
+    p: id => [...document.querySelectorAll(`[data-piece="${id}"]`)],
+    s: id => [document.getElementById(id)].filter(it => it !== null),
+  },
+  lineClasses: [[/\beliminated\b/, "loss"]],      // a class for the line, by what it says
+  wordClasses: [[/\b(Red|Blue)\b/g, "side"]],     // a span with a class, around words
+})
+```
+
+A line's leading `.class ` tokens become classes of the line (`.h1 Turn 3`), `*bold*` is bold, and a reference shows
+its name in a `span.ref.ref-<kind>`: hovering it puts `log-focus` on the kind's targets, clicking pans the map to the
+first one. Don't `ref` a piece the reader may not identify: its id gives it away (write "a block" instead).
+`parseLogLine(text)` is the parser alone.
+
+## Clicks, layers, SVG
+
+`actionFor(verbs, argument)` (client): the first verb whose action list in the view includes the argument: what a
+click on a space or piece means right now. `svgElement(name, attributes, parent?)` creates an SVG element,
+`ensureLayer(id, {before})` gets or creates a `<g>` layer, `escapeHtml(text)` is for `on_prompt`.
+
+`client/aside.html` has a `#turn_info` div between the roles and the log, for a line or two about the turn; it is
+hidden while empty.
+
+## Offset hex grids
+
+Most wargame maps have flat-topped hexes in columns, every other column shifted by half a hex, named by their printed
+column and row. `createOffsetHexGrid({columns, rows, shifted, isOnMap?, format?})` (rules) gives their `hexes`,
+`neighbors`, `distance`, `step`, `sideKey` and `point`; ids are `"CCRR"` (`HEX_FORMATS.fourDigit`, the default) or
+`"C.RR"` (`HEX_FORMATS.dotted`). `shifted` says which columns sit half a hex further towards the higher rows.
+
+`reachable(graph, starts, mp, {cost, canStop?, oneSpaceRule?})` finds the cheapest cost of every space a unit can get
+to (Dijkstra), on a hex grid or anything with `neighbors()`, and `pathTo(reach, space)` the way there.
+
+## Hex helpers (`A<nn>.B<nn>`)
 
 They assume hexes named `A<nn>.B<nn>`. Anything that depends on the shape of the board takes an `isOnBoard(a, b)` function. `createHexCenterLocator` and `highlightHexes` state what they need from the page in their doc comments.
 
@@ -132,6 +200,13 @@ beforeEach(() => stubFramework({random: () => 3}))
 ```
 
 The set, map, array and object helpers are the framework's real code, the control flow is spies, and `random` throws unless you supply it. Call `vi.unstubAllGlobals()` if a later test needs a clean slate.
+
+`frameworkNameClashes(rulesDir)` lists the rules' top-level declarations that would replace one of framework.js's
+(a `resume` or `finish` of your own): rules.js puts both in one scope, so nothing else notices.
+
+```ts
+it("clashes with no framework name", () => expect(frameworkNameClashes(new URL("./", import.meta.url).pathname)).toEqual([]))
+```
 
 `pnpm test` here builds `test/fixture` and plays it through the real framework, which guards the rules above. `pnpm check:types` type-checks the package.
 
