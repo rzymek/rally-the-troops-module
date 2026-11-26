@@ -16,6 +16,7 @@ const XML = `<?xml version="1.0" encoding="UTF-8"?>
 </page>
 <page number="2" position="absolute" top="0" left="0" height="2381.1" width="1785.8">
 <text top="90" left="30" width="900" height="40" font="1">See <a href="https://example.com/faq">the FAQ</a> or <a href="out.html#3">page 3</a> <i>now</i></text>
+<text top="150" left="30" width="300" height="40" font="1"> Fire  6</text>
 </page>
 </pdf2xml>`
 
@@ -39,6 +40,10 @@ describe("parsePdfXml", () => {
 
   it("keeps links to the web, bold and italics, and drops links within the PDF", () => {
     expect(doc.pages[1].texts[0].html).toBe(`See <a href="https://example.com/faq" target="_blank">the FAQ</a> or page 3 <i>now</i>`)
+  })
+
+  it("maps Symbol and Wingdings private-use characters to Unicode", () => {
+    expect(doc.pages[1].texts[1].html).toBe("\u2022 Fire \u2264 6")
   })
 })
 

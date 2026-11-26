@@ -39,6 +39,28 @@ function attributes(tag: string): Record<string, string> {
   return result
 }
 
+/**
+ * Word writes bullets and a few signs from the Symbol and Wingdings fonts at their private-use code points
+ * (U+F0xx), which no web font has a glyph for. Maps the common ones to their Unicode characters.
+ */
+const symbolChars: Record<string, string> = {
+  "\uF0A7": "\u25AA", // Wingdings small square bullet
+  "\uF0A8": "\u25A1", // Wingdings white square
+  "\uF0B7": "\u2022", // Symbol bullet
+  "\uF0D8": "\u27A2", // Wingdings arrowhead bullet
+  "\uF0FC": "\u2713", // Wingdings check mark
+  "\uF0A3": "\u2264", // Symbol less than or equal
+  "\uF0B3": "\u2265", // Symbol greater than or equal
+  "\uF0B1": "\u00B1", // Symbol plus minus
+  "\uF0B4": "\u00D7", // Symbol multiplication
+  "\uF0AE": "\u2192", // Symbol arrow right
+  "\uF0AC": "\u2190", // Symbol arrow left
+}
+
+function replaceSymbolChars(text: string): string {
+  return text.replace(/[\uF0A0-\uF0FF]/g, c => symbolChars[c] ?? c)
+}
+
 /** Keeps bold, italics and links to the web; drops other tags, such as links within the PDF. */
 function sanitize(inner: string): string {
   const keptLinks: boolean[] = []
@@ -79,7 +101,7 @@ export function parsePdfXml(xml: string, zoom = 1): PdfDocument {
     const texts: PdfText[] = []
     for (const [, textTag, inner] of body.matchAll(/(<text\b[^>]*>)([\s\S]*?)<\/text>/g)) {
       const t = attributes(textTag)
-      const html = sanitize(inner)
+      const html = replaceSymbolChars(sanitize(inner))
       if (html.replace(/<[^>]*>/g, "").trim() === "") continue
       texts.push({top: n(t.top), left: n(t.left), width: n(t.width), height: n(t.height), font: t.font, html})
     }
